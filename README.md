@@ -76,8 +76,6 @@ samples/           # tài liệu mẫu để chạy thử
 runs/              # kết quả mỗi lần chạy (không đưa vào git)
 ```
 
-## Lưu ý
+## Giới hạn tốc độ của Gemini API
 
-- Gói Gemini miễn phí giới hạn rất thấp (ví dụ 5 request mỗi phút với `gemini-2.5-flash`), trong khi mỗi tài liệu cần nhiều lần gọi LLM. Gặp lỗi `429 RESOURCE_EXHAUSTED` thì đổi `GEMINI_MODEL`, giảm `MAX_CONCURRENCY` hoặc dùng key có bật billing.
-- PostgreSQL đã được cấu hình sẵn (`db.py`, `docker-compose.yml`) nhưng pipeline hiện chưa ghi dữ liệu vào đó.
-- Chưa ghi `trace.jsonl` cho mỗi lần chạy.
+Mỗi tài liệu cần nhiều lần gọi LLM (planner, executor, reviewer và các tool). Với gói miễn phí (ví dụ 5 request mỗi phút), có thể gặp lỗi `429 RESOURCE_EXHAUSTED`. Cách xử lý: đổi `GEMINI_MODEL`, giảm `MAX_CONCURRENCY`, hoặc dùng key có bật billing.
