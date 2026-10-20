@@ -76,3 +76,7 @@ samples/           # tài liệu mẫu để chạy thử
 runs/              # kết quả mỗi lần chạy (không đưa vào git)
 ```
 
+## Theo dõi bằng LangSmith (tuỳ chọn)
+
+Đặt `LANGSMITH_TRACING=true` và `LANGSMITH_API_KEY` trong `.env` để xem cây thực thi của mỗi lần chạy trên [LangSmith](https://smith.langchain.com): các nhánh tài liệu song song, từng lần gọi LLM với prompt đầy đủ, từng tool call, thời gian và số token. Mỗi lần chạy được gắn metadata `run_id` để lọc trên giao diện. Nội dung tài liệu sẽ được gửi lên LangSmith nên mặc định tính năng này tắt.
+

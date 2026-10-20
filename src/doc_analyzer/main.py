@@ -1,8 +1,10 @@
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
 from doc_analyzer.graph import build_graph
+from doc_analyzer.state import GraphState
 
 SUFFIXES = {".txt", ".md"}
 
@@ -24,7 +26,8 @@ def main() -> None:
         sys.exit("Không tìm thấy tài liệu .txt hoặc .md nào.")
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
-    result = build_graph().invoke({"run_id": run_id, "doc_paths": doc_paths})
+    state = cast(GraphState, {"run_id": run_id, "doc_paths": doc_paths})
+    result = build_graph().invoke(state, config={"metadata": {"run_id": run_id}})
 
     run_dir = Path("runs") / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
