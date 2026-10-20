@@ -27,7 +27,6 @@ def load_settings() -> Settings:
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         max_retries=int(os.getenv("MAX_RETRIES", "2")),
         max_concurrency=int(os.getenv("MAX_CONCURRENCY", "4")),
-        # docker-compose truyền sẵn DATABASE_URL (host=postgres); chạy local thì dựng từ POSTGRES_*
         database_url=os.getenv("DATABASE_URL")
         or f"postgresql://{user}:{password}@{host}:{port}/{db}",
     )
