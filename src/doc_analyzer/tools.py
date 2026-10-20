@@ -77,3 +77,6 @@ def classify(text: str) -> str:
         "Phân loại văn bản sau vào đúng một nhóm.\n\n" + text
     ))
     return result.doc_type
+
+
+tools = [read_file, summarize, extract_info, classify]

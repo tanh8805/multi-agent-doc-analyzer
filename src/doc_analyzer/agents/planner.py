@@ -1,36 +1,32 @@
 import json
-from typing import cast
 
-from pydantic import BaseModel
+from langchain_core.messages import HumanMessage
 
-from doc_analyzer.llm import get_llm, load_prompt
+from doc_analyzer.llm import get_llm, invoke_with_tools, load_prompt
 from doc_analyzer.messages import TaskAssigned
 from doc_analyzer.state import GraphState, MessageState
 from doc_analyzer.tools import read_file
 
 
-class Plan(BaseModel):
-    doc_paths: list[str]
-
-
 def planner(state: GraphState) -> dict:
-    previews = []
-    for path in state["doc_paths"]:
-        try:
-            content = read_file.invoke({"path": path})
-        except (OSError, UnicodeDecodeError):
-            previews.append(f"- {path}: không đọc được")
-            continue
-        previews.append(f"- {path} ({len(content)} ký tự): {content[:300]!r}")
+    doc_paths = "\n".join(f"- {path}" for path in state["doc_paths"])
+    prompt = HumanMessage(load_prompt("planner", doc_paths=doc_paths))
+    messages = invoke_with_tools([prompt], [read_file])
 
-    prompt = load_prompt("planner", documents="\n".join(previews))
-    chain = get_llm().with_structured_output(Plan)
-    plan = cast(Plan, chain.invoke(prompt))
+    instructions = {}
+    for line in messages[-1].text.splitlines():
+        path, _, instruction = line.strip("- ").partition("|")
+        if path.strip() in state["doc_paths"]:
+            instructions.setdefault(path.strip(), instruction.strip())
 
-    doc_paths = [path for path in plan.doc_paths if path in state["doc_paths"]]
     tasks = [
-        TaskAssigned(run_id=state["run_id"], task_id=f"t{i}", doc_path=path)
-        for i, path in enumerate(doc_paths, start=1)
+        TaskAssigned(
+            run_id=state["run_id"],
+            task_id=f"t{i}",
+            doc_path=path,
+            instruction=instruction,
+        )
+        for i, (path, instruction) in enumerate(instructions.items(), start=1)
     ]
     return {
         "tasks": tasks,
@@ -60,12 +56,9 @@ def synthesize(state: GraphState) -> dict:
         if not review.approved
     ]
 
-    prompt = (
-        "Tổng hợp kết quả phân tích các tài liệu dưới đây thành một báo cáo Markdown "
-        "gồm các mục: Tổng quan, Chi tiết từng tài liệu, Nhận xét chung giữa các tài liệu, "
-        "Hạn chế. Chỉ dùng thông tin có trong kết quả, không bịa thêm.\n\n"
-        "## Kết quả\n\n" + "\n\n".join(sections) + "\n\n"
-        "## Tài liệu chưa được reviewer chấp nhận (đưa vào mục Hạn chế)\n\n"
-        + ("\n".join(failed) or "Không có")
+    prompt = load_prompt(
+        "synthesize",
+        results="\n\n".join(sections),
+        failed="\n".join(failed) or "Không có",
     )
     return {"report": get_llm().invoke(prompt).text}

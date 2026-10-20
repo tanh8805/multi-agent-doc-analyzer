@@ -24,3 +24,6 @@ class TaskState(TypedDict):
     task: TaskAssigned
     result: TaskResult
     feedback: ReviewFeedback
+    messages: Annotated[list[MessageState], operator.add]
+    results: Annotated[dict[str, TaskResult], operator.or_]
+    reviews: Annotated[list[ReviewFeedback], operator.add]

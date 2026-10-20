@@ -1,22 +1,43 @@
+import json
+
+from langchain_core.messages import HumanMessage, ToolMessage
+
+from doc_analyzer.llm import invoke_with_tools, load_prompt
 from doc_analyzer.messages import TaskResult
 from doc_analyzer.state import MessageState, TaskState
-from doc_analyzer.tools import classify, extract_info, read_file, summarize
+from doc_analyzer.tools import tools
 
 
 def executor(state: TaskState) -> dict:
     task = state["task"]
-    previous = state.get("result")
     feedback = state.get("feedback")
+    note = feedback.comment if feedback and not feedback.approved else "Không có"
+    prompt = HumanMessage(
+        load_prompt(
+            "executor",
+            doc_path=task.doc_path,
+            instruction=task.instruction,
+            feedback=note,
+        )
+    )
+    messages = invoke_with_tools([prompt], tools)
 
-    text = read_file.invoke({"path": task.doc_path})
-    if feedback and not feedback.approved:
-        text += f"\n\nGóp ý của reviewer ở lần trước: {feedback.comment}"
+    outputs = {
+        message.name: str(message.content)
+        for message in messages
+        if isinstance(message, ToolMessage)
+    }
+    try:
+        extracted_info = json.loads(outputs.get("extract_info", "{}"))
+    except ValueError:
+        extracted_info = {}
 
+    previous = state.get("result")
     result = TaskResult(
         task_id=task.task_id,
-        summary=summarize.invoke({"text": text}),
-        extracted_info=extract_info.invoke({"text": text}),
-        category=classify.invoke({"text": text}),
+        summary=outputs.get("summarize", ""),
+        extracted_info=extracted_info,
+        category=outputs.get("classify", ""),
         attempts=previous.attempts + 1 if previous else 1,
     )
     return {

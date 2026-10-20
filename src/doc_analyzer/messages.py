@@ -7,6 +7,7 @@ class TaskAssigned(BaseModel):
     run_id: str
     task_id: str
     doc_path: str
+    instruction: str
 
 
 class TaskResult(BaseModel):
